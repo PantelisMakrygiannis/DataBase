@@ -1,0 +1,670 @@
+DROP DATABASE StaffEvaluation; 
+
+CREATE DATABASE StaffEvaluation;
+  use StaffEvaluation;
+
+CREATE TABLE Company(
+ AFM             char(9)     default 'unknown' NOT NULL,
+ DOY             varchar(15) default 'unknown' NOT NULL,
+ name            varchar(35) default 'unknown' NOT NULL,
+ phone           bigint(16)  NOT NULL,
+ street          varchar(15) default 'unknown' NOT NULL,
+ num             tinyint(4)  NOT NULL,
+ city            varchar(15) default 'unknown' NOT NULL,
+ country         varchar(15) default 'unknown' NOT NULL,
+ PRIMARY KEY (AFM),
+ UNIQUE (name)
+ );
+
+CREATE TABLE User(
+ username        varchar(12) default 'unknown' NOT NULL,
+ password        varchar(10) default 'unknown' NOT NULL,
+ name            varchar(25) default 'unknown' NOT NULL,
+ surname         varchar(35) default 'unknown' NOT NULL,
+ reg_date        datetime    NOT NULL,
+ email           varchar(30) default 'unknown' NOT NULL,
+ PRIMARY KEY (username)
+ );
+
+CREATE TABLE Manager(
+ managerUsername varchar(12) default 'unknown' NOT NULL,
+ exp_years       tinyint(4)  NOT NULL,
+ firm            char(9)     default 'unknown' NOT NULL,
+ PRIMARY KEY (managerUsername),
+ CONSTRAINT MNGUSRNAME 
+ FOREIGN KEY (managerUsername) REFERENCES User (username) 
+ ON DELETE CASCADE ON UPDATE CASCADE,
+ CONSTRAINT MNGFIRM 
+ FOREIGN KEY (firm) REFERENCES Company (AFM) 
+ ON DELETE CASCADE ON UPDATE CASCADE
+ );
+
+CREATE TABLE Employee(
+ username        varchar(12) default 'unknown' NOT NULL,
+ AM              int(7)      NOT NULL,
+ firm            char(9)     default 'unknown' NOT NULL,
+ exp_years       tinyint(4)  NOT NULL,
+ bio             text        default 'unknown' NOT NULL,
+ sistatikes      varchar(35) default 'unknown' NOT NULL,
+ certificates    varchar(35) default 'unknown' NOT NULL,
+ awards          varchar(35) default 'unknown' NOT NULL,
+ PRIMARY KEY (username),
+ CONSTRAINT E_NAME 
+ FOREIGN KEY (username) REFERENCES User(username)
+ ON UPDATE CASCADE ON DELETE CASCADE,
+ CONSTRAINT WORK   
+ FOREIGN KEY (firm)  REFERENCES Company (AFM)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE Languages(
+ employee        varchar(12) default 'unknown' NOT NULL,
+ language        set('EN','FR','SP','GR') NOT NULL,
+ PRIMARY KEY (employee,language),
+ CONSTRAINT E_LANGUAGES 
+ FOREIGN KEY (employee) REFERENCES Employee (username)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE Degree(
+ titlos          varchar(50) default 'unknown' NOT NULL,
+ idryma          varchar(40) default 'unknown' NOT NULL,
+ bathmida        enum('LYKEIO','UNIV','MASTER','PHD') NOT NULL,
+ PRIMARY KEY (titlos,idryma)
+  );
+
+CREATE TABLE Has_Degree(
+ degr_title      varchar(50) default 'unknown' NOT NULL,
+ degr_idryma     varchar(40) default 'unknown' NOT NULL,
+ empl_usrname    varchar(12) default 'unknown' NOT NULL,
+ etos            year(4)     NOT NULL,
+ grade           float(3,1)  NOT NULL,
+ PRIMARY KEY (empl_usrname),
+ UNIQUE (degr_title,degr_idryma),
+ CONSTRAINT D_TITLE 
+ FOREIGN KEY (degr_title,degr_idryma) REFERENCES Degree (titlos,idryma)
+ ON DELETE CASCADE ON UPDATE CASCADE,
+ CONSTRAINT E_USRNAME 
+ FOREIGN KEY (empl_usrname) REFERENCES Employee (username)
+ ON DELETE CASCADE ON UPDATE CASCADE
+ );
+
+CREATE TABLE Project(
+ empl            varchar(12) default 'unknown' NOT NULL,
+ num             tinyint(4)  NOT NULL,
+ situation       enum('ENTOS ETAIREIAS','EKTOS ETAIREIAS') NOT NULL,
+ description     text        default 'unknown' NOT NULL,
+ url             varchar(60) default 'unknown' NOT NULL,
+ PRIMARY KEY (empl,num),
+ CONSTRAINT DONE_BY FOREIGN KEY (empl) REFERENCES Employee (username)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE Evaluator(
+ username        varchar(12) default 'unknown' NOT NULL,      
+ evid            int(4)      NOT NULL,
+ exp_years       tinyint(4)  NOT NULL,
+ firm            char(9)     default 'unknown' NOT NULL,
+ PRIMARY KEY (username),
+ UNIQUE (evid),
+ CONSTRAINT EV_USRNAME FOREIGN KEY (username) REFERENCES User (username)
+ ON UPDATE CASCADE ON DELETE CASCADE,
+ CONSTRAINT HIRED FOREIGN KEY (firm) REFERENCES Company (AFM)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE Administrator(
+ username        varchar(12) default 'unknown' NOT NULL,
+ PRIMARY KEY (username),
+ CONSTRAINT ADNAME FOREIGN KEY (username) REFERENCES User (username)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE Job_Announcement(
+ new_job_id      int(4)      NOT NULL,
+ evaluator       varchar(12) default 'unknown' NOT NULL,
+ announce_date   datetime    NOT NULL,
+ submission_date date        NOT NULL,
+ PRIMARY KEY (new_job_id),
+ CONSTRAINT JOBID FOREIGN KEY (new_job_id) REFERENCES Job (id)
+ ON UPDATE CASCADE ON DELETE CASCADE,
+ CONSTRAINT EV  FOREIGN KEY (evaluator) REFERENCES Evaluator (username)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE Job(
+ id              int(4)      NOT NULL,
+ start_date      date        NOT NULL,
+ salary          float(6,1)  NOT NULL,
+ position        varchar(40) default 'unknown' NOT NULL,
+ edra            varchar(45) default 'unknown' NOT NULL,
+ evaluator       varchar(12) default 'unknown' NOT NULL,
+ PRIMARY KEY (id),
+ CONSTRAINT EVLTOR FOREIGN KEY (evaluator) REFERENCES Evaluator (username)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE Needs(
+ job_id          int(4)      NOT NULL,
+ antikeim_title  varchar(36) default 'unknown' NOT NULL,
+ PRIMARY KEY (job_id,antikeim_title),
+ CONSTRAINT JOBNEEDS FOREIGN KEY (job_id) REFERENCES Job (id)
+ ON UPDATE CASCADE ON DELETE CASCADE,
+ CONSTRAINT ANTIKNEEDS FOREIGN KEY (antikeim_title) REFERENCES Antikeimeno (title)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE Antikeimeno(
+ title           varchar(36) default 'unknown' NOT NULL,
+ description     text        default 'unknown' NOT NULL,
+ belongs_to      varchar(36) default 'unknown' NOT NULL,
+ PRIMARY KEY (title),
+ CONSTRAINT BELONGS FOREIGN KEY (belongs_to) REFERENCES Antikeimeno (title)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE RequestEvaluation(
+ empl_usrname    varchar(12) default 'unknown' NOT NULL,
+ job_id          int(4)      NOT NULL,
+ PRIMARY KEY (empl_usrname,job_id),
+ CONSTRAINT REQNAME FOREIGN KEY (empl_usrname) REFERENCES Employee (username)
+ ON UPDATE CASCADE ON DELETE CASCADE,
+ CONSTRAINT REQJOB FOREIGN KEY (job_id) REFERENCES Job (id)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE EvaluationResult(
+ ev_id           int(4)      NOT NULL,
+ empl_usrname    varchar(12) default 'unknown' NOT NULL,
+ job_id          int(4)      NOT NULL,
+ grade           int(4)      NOT NULL,
+ comments        varchar(255) default 'unknown' NOT NULL,
+ PRIMARY KEY (empl_usrname),
+ UNIQUE (ev_id),
+ CONSTRAINT EVALUATORID FOREIGN KEY (ev_id) REFERENCES Evaluator (evid)
+ ON DELETE CASCADE ON UPDATE CASCADE,
+ CONSTRAINT EMPLRES FOREIGN KEY (empl_usrname) REFERENCES Employee (username)
+ ON DELETE CASCADE ON UPDATE CASCADE,
+ CONSTRAINT JOBB FOREIGN KEY (job_id) REFERENCES Job (id)
+ ON DELETE CASCADE ON UPDATE CASCADE
+ );
+
+CREATE TABLE EvaluationData(
+ grade1Interview  enum('0','1','2','3','4') NOT NULL,
+ grade2Report     enum('0','1','2','3','4') NOT NULL,
+ grade3Bio        enum('0','1','2') NOT NULL,
+ result           enum('0','1','2','3','4','5','6','7','8','9','10') NOT NULL, 
+ empl_username    varchar(12) default 'unknown' NOT NULL,
+ ev_username      varchar(12) default 'unknown' NOT NULL,
+ job_id           int(4)      NOT NULL,
+ PRIMARY KEY(ev_username,empl_username,job_id),
+ CONSTRAINT EMPLGRAD FOREIGN KEY (empl_username) REFERENCES Employee(username)
+ ON UPDATE CASCADE ON DELETE CASCADE,
+ CONSTRAINT EVALGRAD FOREIGN KEY (ev_username) REFERENCES Evaluator(username)
+ ON UPDATE CASCADE ON DELETE CASCADE,
+ CONSTRAINT JOBGRAD FOREIGN KEY (job_id) REFERENCES Job(id)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE Submission(
+ empl_name        varchar(12) default 'unknown' NOT NULL,
+ AFM_firm         char(9) default 'unknown' NOT NULL,
+ job_sub          int (4)  NOT NULL,
+ sub_date         datetime NOT NULL,
+ PRIMARY KEY (empl_name,job_sub),
+ CONSTRAINT EMPLNAME FOREIGN KEY (empl_name) REFERENCES Employee (username)
+ ON UPDATE CASCADE ON DELETE CASCADE,
+ CONSTRAINT AFMFIRM FOREIGN KEY (AFM_firm) REFERENCES Company (AFM)
+ ON UPDATE CASCADE ON DELETE CASCADE,
+ CONSTRAINT JOBSUB FOREIGN KEY (job_sub) REFERENCES RequestEvaluation (job_id)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ );
+
+CREATE TABLE Log(
+ username_log       varchar(12) default 'unknown' NOT NULL,
+ date_time          datetime    NOT NULL,
+ succes             enum('YES','NO') NOT NULL,
+ kind               enum('INSERT','UPDATE','DELETE') NOT NULL,
+ table_name         enum('Job','Employee','RequestEvaluation') NOT NULL,
+ PRIMARY KEY (username_log),
+ CONSTRAINT USRLOG FOREIGN KEY (username_log) REFERENCES User (username)
+ ON UPDATE CASCADE ON DELETE CASCADE
+ ); 
+
+INSERT INTO Manager VALUES
+  ('Kap1014','10','CORELCO'),
+  ('Pap1015','8','SHELL'),
+  ('Kots1016','11','AVIN');
+
+INSERT INTO Company VALUES
+  ('102176295','LAMIAS','CORELCO','2657498637','LEWNIDOY','8','LAMIA','GREECE'),
+  ('103258672','PATRAS','SHELL','4839568596','MAIZWNOS','7','PATRA','GREECE'),
+  ('104303826','ATHINAS','AVIN','2947385638','PANEPISTHMIOY','3','ATHENS','GREECE');
+
+INSERT INTO Job VALUES
+  ('2342','2020-8-25','20.000','LOGISTIS','LAMIA','eval1079'),
+  ('0034','2020-9-12','15.000','DIAFHMISH','PATRA','eval1230'),
+  ('1578','2020-10-21','16.000','PLHROFORIKI','ATHENS','eval1480');
+
+INSERT INTO Needs VALUES
+  ('254768937','LOGISTIKA'),
+  ('693485098','DIADHMISI'),
+  ('145839576','PLHROFORIAKA-SYST');
+
+INSERT INTO Antikeimeno VALUES
+  ('LOGISTIKA','Gnwseis se logistika kai forotexnika zhthmata'),
+  ('DIAFHMISI','Diafhmistikes ikanothtes kai dhmosies sxeseis'),
+  ('PLHROFORIAKA_SYST','Gnwseis plhroforikwn sythmatwn kai basewn dedomenwn');
+
+INSERT INTO Log VALUES
+  ('Kap1014','2020-9-24 15:30:00','YES','INSERT','Job','Manager'),
+  ('empl1062','2020-5-13 12:35:00','NO','UPDATE','Employee','Employee'),
+  ('empl1062','2020-6-7 13:38:00','YES','DELETE','Employee','Employee');
+
+INSERT INTO RequestEvaluation VALUES
+   ('empl1443','2342'),
+   ('empl1654','0034'),
+   ('empl1124','1578');
+
+INSERT INTO Languages VALUES
+   ('empl1743','EN'),
+   ('empl1324','FR'),
+   ('empl1624','FR');
+
+INSERT INTO Has_Degree VALUES
+  ('Computer Eng','PAN PATRWN','empl0010','2020','7'),
+  ('Informatics','TEI of Larisa','empl3261','2019','6,5'),
+  ('Data Analyst','Tech_Dortmund','empl1221','2020','7'); 
+
+INSERT INTO Employee VALUES
+  ('empl1443','1293847','CORELCO','14','Ptyxio-Plhroforikhs','unknown','unknown','unknown'),
+  ('empl1654','3849361','SHELL','12','Ptyxio-Hlektrologou','unknown','unknown','unknown'),
+  ('empl1124','2983645','AVIN','16','Ptyxio-Logistikhs','unknown','unknown','unknown');
+
+INSERT INTO Degree VALUES
+  ('empl1443','Plhroforikarios','PAN-PATRWN','UNIV'),
+  ('empl1654','Hlektrologos','PAN-IOANNINWN','MASTER'),
+  ('empl1124','Logistis','PΑΝ-PEIRAIA','UNIV');
+
+INSERT INTO Project VALUES
+  ('empl1443','2','ENTOS ETAIREIAS','unknown','unknown'),
+  ('empl1654','3','ENTOS ETAIREIAS','unknown','unknown'),
+  ('empl1124','4','EKTOS ETAIREIAS','unknown','unknown');
+
+INSERT INTO User VALUES
+    ('empl1062','papadop@gmail.com','pap1234','2016/05/05'),
+    (eval1070,'zafeirpatra@gmail.com',zfp5678','2017/01/06');
+
+INSTERT INTO Evaluator VALUES
+   ('eval1079',null,'CORELCO'),
+   ('eval1070',null,'SHELL'),
+   ('eval1073',null,'AVIN');
+
+INSERT INTO Submission VALUES
+   ('empl1428','102176295','12','2020/10/12'),
+   ('empl1239','103258672','24','2020/02/15'),
+   ('empl3451','104303826','21','2020/12/21');
+   
+
+INSERT INTO Job_Announcement VALUES
+   ('eval1070','1232','2020/09/15','2020/08/15'),
+   ('eval1073','1423','2020/09/21','2020/08/03'),
+   ('eval1079','1242','2020/10/15','2020/10/04');
+
+INSERT INTO EvaluationData VALUES
+   ('2','2','2',null,'empl1212','eval1070','1232'),
+   ('1','2','1',null,'empl1213','eval1230','1423'),
+   ('3','1','1',null,'empl1214','eval1480','1242');
+
+INSERT INTO EvaluationResult VALUES
+   ('eval1079','empl1443','2342','09','unknown'),
+   ('eval1070','empl1654','0034','07','unknown'),
+   ('eval1073','empl1124','1578','10','unknown');
+
+INSERT INTO Administator VALUES
+   ('admin01')
+   ('admin12');
+***************************************************************************************************************************************************************************************
+
+
+DELIMITER $ 
+CREATE PROCEDURE ShowEmployeeEvaluation (IN name varchar(25), IN surname varchar(35))
+BEGIN
+ DECLARE Name varchar(25);
+ DECLARE Surname varchar(35);
+ DECLARE finishedFlag int;
+ DECLARE EmployeeCursor CURSOR FOR
+  Select * from Submission as s where s.name=name and s.surname=surname;
+  DECLARE CONTINUE HANDLER FOR NOT FOUND finishedFlag=1;
+  OPEN EmployeeCursor;
+  SET finishedFlag=0;
+  REPEAT
+    FETCH EmployeeCursor INTO Name,Surname;
+    IF (EmployeeCursor=0) THEN
+      Select grade from EvaluationResult as r where s.empl_name=r.empl_usrname;
+      Select name,surname from User as (u) 
+      INNER JOIN Evaluator as e ON e.username=(u.)username
+      where r.ev_id=e.ev_id;
+    END IF;
+  UNTIL (finishedFlag=1)
+  END REPEAT;
+  CLOSE EmployeeCursor;
+ END $
+
+ DELIMITER ;
+
+DELIMITER $
+
+CREATE PROCEDURE FinalGrade(IN jobid int(4),IN evaluatorid int(4))
+BEGIN
+ DECLARE finishedFlag int;
+ DECLARE totalgrade enum('0','1','2','3','4','5','6','7','8','9','10');
+ DECLARE grade1 enum('0','2','3','4');
+ DECLARE grade2 enum('0','2','3','4');
+ DECLARE grade3 enum('0','2');
+ DECLARE finalCusrsor CURSOR FOR
+ Select grade1Interview,grade2Report,grade3Bio,result
+ from EvaluationData
+ INNER JOIN Job ON job_id=id
+ where job_id=jobid
+ INNER JOIN Evaluator ON ev_username=username
+ where evid=evaluatorid;
+ DECLARE CONTINUE HANDLER FOR NOT FOUND SET finishedFlag=1;
+ OPEN finalCusrsor;
+ SET finishedFlag=0;
+ FETCH transferCursor INTO grade1,grade2,grade3,totalgrade;
+ WHILE (finishedFlag=0) DO
+   IF ((grade1 AND grade2 AND grade3 IS NOT NULL) AND (totalgrade IS NULL)) THEN
+     UPDATE EvaluationData SET result=grade1+grade2+grade3 where result=NULL;
+   END IF;
+ END WHILE;
+ CLOSE finalCusrsor;
+END $
+
+DELIMITER ;
+
+DELIMITER $
+CREATE PROCEDURE PositionEvaluation(IN Thesi varchar(40))
+BEGIN 
+ DECLARE finishedFlag int;
+ DECLARE name_employee varchar(12);
+ DECLARE total_grade enum('0','1','2','3','4','5','6','7','8','9','10');
+ DECLARE garde_1 enum('0','2','3','4');
+ DECLARE garde_2 enum('0','2','3','4');
+ DECLARE garde_3 enum('0','2');
+ DECLARE transferCursor CURSOR FOR
+ Select empl_username,result,grade1Interview,grade2Report,grade3Bio
+ from EvaluationData
+ INNER JOIN Job ON job_id=id 
+ where position=Thesi;
+ DECLARE CONTINUE HANDLER FOR NOT FOUND SET finishedFlag=1;
+ OPEN transferCursor;
+ SET finishedFlag=0;
+ FETCH transferCursor INTO name_employee,total_grade,garde_1,garde_2,garde_3;
+ WHILE (finishedFlag=0) DO
+   IF (garde_1 AND garde_2 AND garde_3 IS NOT NULL) THEN 
+     Select empl_username as 'Employee',result as 'Total Evaluation'
+     from EvaluationData
+     ORDER BY result DESC;
+    Select 'Final Tables' ;
+   ELSEIF (garde_1 OR garde_2 OR garde_3 IS NULL) THEN
+     CASE result
+       WHEN IS NOT NULL THEN
+        Select empl_usrname as 'Employee',result as 'Total Evaluation'
+        from EvaluationData
+        ORDER BY result DESC;
+        Select 'Evaluation in Progress';
+     END CASE;
+    Select count(empl_usrname) as 'Request that left'
+    from EvaluationData
+    where grade1Interview=NULL OR grade2Report=NULL OR grade3Bio=NULL;
+   ELSEIF (name_employee IS NULL) THEN
+     Select 'There are no Requests'
+   END IF;     
+ END WHILE;
+ CLOSE transferCursor;
+END $
+
+DELIMITER ;
+
+********************************************************************************************************************************************************************************
+
+
+************************************************************************************JOB**************************************************************
+
+DELIMITER $
+
+CREATE TRIGGER InsertJob
+AFTER INSERT ON Job 
+FOR EACH ROW 
+BEGIN
+ DECLARE currDate date;
+ DECLARE usrname varchar(12);
+ DECLARE succes enum('YES','NO');
+ SELECT username INTO usrname
+ FROM User 
+ INNER JOIN Evaluator as e ON username=e.username;
+ SET currDate=CURDATE();
+   IF (succes='YES') THEN
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'YES','INSERT','Job');
+   ELSE 
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'NO','INSERT','Job');
+   END IF; 
+ END$
+
+ DELIMITER ;
+
+ DELIMITER $
+
+ CREATE TRIGGER UpdateJob
+ AFTER UPDATE ON Job
+ FOR EACH ROW
+ BEGIN
+  DECLARE currDate date;
+  DECLARE usrname varchar(12);
+  DECLARE succes enum('YES','NO');
+  SELECT username INTO usrname
+  FROM User
+  INNER JOIN Manager as m ON username=m.username
+  INNER JOIN Evaluator as e ON username=e.username;
+  SET currDate=CURDATE();
+   IF (succes='YES') THEN
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'YES','UPDATE','Job');
+   ELSE 
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'NO','UPDATE','Job');
+   END IF; 
+ END$
+
+ DELIMITER ;
+
+ DELIMITER $
+
+ CREATE TRIGGER DeleteJob
+ AFTER DELETE ON Job
+ FOR EACH ROW
+ BEGIN
+  DECLARE currDate date;
+  DECLARE usrname varchar(12);
+  DECLARE succes enum('YES','NO');
+ SELECT username INTO usrname
+ FROM User 
+ INNER JOIN Evaluator as e ON username=e.username;
+ SET currDate=CURDATE();
+   IF (succes='YES') THEN
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'YES','INSERT','Job');
+   ELSE 
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'NO','INSERT','Job');
+   END IF; 
+ END$
+ 
+ DELIMITER ;                                  
+
+************************************************************************EMPLOYEE*********************************************************************
+ DELIMITER $
+
+ CREATE TRIGGER InsertEmployee
+ AFTER INSERT ON Employee 
+ FOR EACH ROW
+ BEGIN
+  DECLARE currDate date;
+  DECLARE usrname varchar(12);
+  DECLARE succes enum('YES','NO');
+ SELECT username INTO usrname
+ FROM User 
+ INNER JOIN Employee as e ON username=e.username
+ INNER JOIN Manager ON usrname=managerUsername;
+ SET currDate=CURDATE();
+   IF (succes='YES') THEN
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'YES','INSERT','Job');
+   ELSE 
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'NO','INSERT','Job');
+   END IF; 
+ END$ 
+
+ DELIMITER ;
+
+ DELIMITER $
+
+ CREATE TRIGGER UpdateEmployee
+ AFTER UPDATE ON Employee
+ FOR EACH ROW
+ BEGIN
+  DECLARE currDate date;
+  DECLARE usrname varchar(12);
+  DECLARE succes enum('YES','NO');
+ SELECT username INTO usrname
+ FROM User 
+ INNER JOIN Employee as e ON username=e.username
+ INNER JOIN Manager ON usrname=managerUsername;
+ SET currDate=CURDATE();
+   IF (succes='YES') THEN
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'YES','INSERT','Job');
+   ELSE 
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'NO','INSERT','Job');
+   END IF; 
+ END$ 
+
+ DELIMITER ;
+
+ DELIMITER $
+
+ CREATE TRIGGER DeleteEmployee
+ AFTER DELETE ON Employee
+ FOR EACH ROW
+ BEGIN
+  DECLARE currDate date;
+  DECLARE usrname varchar(12);
+  DECLARE succes enum('YES','NO');
+ SELECT username INTO usrname
+ FROM User 
+ INNER JOIN Employee as e ON username=e.username
+ INNER JOIN Manager ON usrname=managerUsername;
+ SET currDate=CURDATE();
+   IF (succes='YES') THEN
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'YES','INSERT','Job');
+   ELSE 
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'NO','INSERT','Job');
+   END IF; 
+ END$ 
+
+ DELIMITER ;                                     
+
+
+***********************************************************************REQUESTEVALUATION*************************************************************
+
+DELIMITER $
+
+CREATE TRIGGER InsertRequerstEvaluation
+AFTER INSERT ON RequestEvaluation 
+FOR EACH ROW
+BEGIN
+ DECLARE currDate date;
+ DECLARE usrname varchar(12);
+ DECLARE succes enum('YES','NO');
+ SELECT username INTO usrname
+ FROM User 
+ SET currDate=CURDATE();
+   IF (succes='YES') THEN
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'YES','INSERT','Job');
+   ELSE 
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'NO','INSERT','Job');
+   END IF; 
+ END$
+
+ DELIMITER ;
+
+ DELIMITER $
+
+CREATE TRIGGER UpdateRequerstEvaluation
+AFTER UPDATE ON RequestEvaluation 
+FOR EACH ROW
+BEGIN
+ DECLARE currDate date;
+ DECLARE usrname varchar(12);
+ DECLARE succes enum('YES','NO');
+ SELECT username INTO usrname
+ FROM User 
+ SET currDate=CURDATE();
+   IF (succes='YES') THEN
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'YES','INSERT','Job');
+   ELSE 
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'NO','INSERT','Job');
+   END IF; 
+ END$
+
+ DELIMITER ;
+
+ DELIMITER $
+
+CREATE TRIGGER DeleteRequerstEvaluation
+AFTER DELETE ON RequestEvaluation 
+FOR EACH ROW
+BEGIN
+ DECLARE currDate date;
+ DECLARE usrname varchar(12);
+ DECLARE succes enum('YES','NO');
+ SELECT username INTO usrname
+ FROM User 
+ SET currDate=CURDATE();
+   IF (succes='YES') THEN
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'YES','INSERT','Job');
+   ELSE 
+    INSERT INTO Log (username_log,date_time,succes,kind,table_name)
+    VALUES (usrname,currDate,'NO','INSERT','Job');
+   END IF; 
+ END$
+
+ DELIMITER ;
+
+
+************************************************************************UPDATECOMPANY****************************************************************
+
+DELIMITER $ 
+
+CREATE TRIGGER UpdateCompany 
+BEFORE UPDATE ON Company 
+FOR EACH ROW
+BEGIN 
+  SET @NEW.AFM=@OLD.AFM;
+  SET @NEW.DOY=@OLD.DOY;
+  SET @NEW.name=@OLD.name;
+END $
+
+DELIMITER ;             
